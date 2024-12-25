@@ -1,12 +1,13 @@
-from telegram import InputMediaPhoto, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, ConversationHandler, MessageHandler, filters
+from telegram import InputMediaPhoto, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, \
+    ReplyKeyboardRemove
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, ConversationHandler, \
+    MessageHandler, filters
 import sqlite3
 
 # Стадії конверсії
 CRYPTOCURRENCY, PAYMENT, FINISH = range(3)
 
 appLication = Application.builder().token('8182581834:AAFXBuRAOexW7GH7W40q4_FIkPrYJnGJ4jo').build()
-
 
 
 def setup_database():
@@ -36,6 +37,7 @@ def setup_database():
     connection.close()
     print('База даних успішно налаштована.')
 
+
 def add_user(username, chat_id):
     connection = sqlite3.connect('database.db')
     cursor = connection.cursor()
@@ -50,6 +52,7 @@ def add_user(username, chat_id):
         print(f'Помилка при додаванні користувача: {e}')
     finally:
         connection.close()
+
 
 def add_buy(chat_id, cryptocurrency1):
     connection = sqlite3.connect('database.db')
@@ -70,6 +73,7 @@ def add_buy(chat_id, cryptocurrency1):
         print(f'Помилка при додаванні Криптовалюти: {e}')
     finally:
         connection.close()
+
 
 def set_user_currency(currency_code):
     """
@@ -92,32 +96,33 @@ def set_user_currency(currency_code):
     connection.commit()
     connection.close()
 
-        # Команда /start с приветсвенным сообщением и кнопками
+    # Команда /start с приветсвенным сообщением и кнопками
+
+
 async def start_command(update, context):
     username = update.effective_user.username or "NoUsername"
     chat_id = update.effective_user.id
 
-
     # Додавання користувача в базу даних
     add_user(username, chat_id)
     await update.message.reply_text('Добро пожаловать в КриптоБот! \n'
-                                '/help - Более подробно ознакомится с ботом! \n', )
+                                    '/help - Более подробно ознакомится с ботом! \n', )
 
 
-async def menu(update, context) :
+async def menu(update, context):
     inline_keyboard = [
-        [InlineKeyboardButton( 'Купить криптовалюту' , callback_data='buy')],
-        [InlineKeyboardButton('пока недоступнно', callback_data='help')],
-        [InlineKeyboardButton('пока недоступнно', callback_data='donate')],
-        [InlineKeyboardButton('пока недоступнно', callback_data='shop')]]
-
+        [InlineKeyboardButton('Купить криптовалюту', callback_data='buy')],
+        [InlineKeyboardButton('Продать криптовалюту', callback_data='sell')],
+        [InlineKeyboardButton('Задонатить', callback_data='donate')],
+        [InlineKeyboardButton('Посмотреть в продаже криптовалюту', callback_data='shop')]]
 
     markup = InlineKeyboardMarkup(inline_keyboard)
-    await update.message.reply_text(        'Добро пожаловать в КриптоБот! \n'
+    await update.message.reply_text(
         '/help - Более подробно ознакомится с ботом! \n',        reply_markup=markup)
 
+
 #  Обработчик действий с кнопок
-async def button_handler(update, context) :
+async def button_handler(update, context):
     query = update.callback_query
     await query.answer()
 
@@ -126,28 +131,26 @@ async def button_handler(update, context) :
             "Для покупки криптовалюты напишите название например(Bitcoin,Ethereum,DogeCoin,Cronos "
         )
         return cryptocurrency
-    if query.data == 'help':
-       await query.messeage.reply_text(           'Доступные команды \n'
-           '/shop \n'           '/menu  \n'
-           '/info  \n'           '/pay  \n'
-           '/sell \n'           '/buy  \n')
+    elif query.data == 'sell':
+        await query.message.reply_text(  'продать криптовалюту онлайн пользователям')
+
+        return ConversationHandler.END
+
     elif query.data == 'donate':
         await query.message.reply_text(
             'Поддержать создателя бота - 456789098765 карта')
-    elif query.date == 'shop' :
-        await query.message.reply_text(            'позвляет просмотреть криптовалюту в продаже')
+        return ConversationHandler.END
+    elif query.data == 'shop':
+        await query.message.reply_text('позвляет просмотреть криптовалюту в продаже')
+        return ConversationHandler.END
 
-async def help(update, context):   await update.message.reply_text(
-           'Доступные команды \n'           '/shop \n'
-           '/menu  \n'           '/info  \n'
-           '/pay  \n'           '/sell \n'
-           '/buy  \n')
 
 # Сбор данных для крипты
 async def cryptocurrency(update, context):
-    context.user_data[' cryptocurrency'] = update.message.text
-    await update.message.reply_text("Введите количество которое вы хотите купить криптовалюты")
+    context.user_data['cryptocurrency'] = update.message.text
+    await update.message.reply_text("Введите количество которое вы хотите купить криптовалюты   ")
     return PAYMENT
+
 
 async def payment(update, context):
     context.user_data['payment'] = update.message.text
@@ -156,6 +159,7 @@ async def payment(update, context):
                                     "И отправьте скриншот оплаты")
     return FINISH
 
+
 async def finish(update, context):
     context.user_data['finish'] = update.message.text
     await update.message.reply_text("Модераторы проверят оплату в течении 5 минут \n"
@@ -163,30 +167,50 @@ async def finish(update, context):
 
 
 
+async def help(update, context):   await update.message.reply_text(
+    'Доступные команды \n'           '/shop \n'
+    '/menu  \n'           '/info  \n'
+    '/pay  \n'           '/sell \n'
+    '/buy  \n')
 
 async def info(update, context):
     await update.message.reply_text(
-            'Бот создан для криптовалют' )
+        'Бот создан для криптовалют')
+
+
 async def shop(update, context):
     await update.message.reply_text(
-           'позвляет просмотреть криптовалюту в продаже')
+        'позвляет просмотреть криптовалюту в продаже')
+
+
 async def pay(update, context):
     await update.message.reply_text(
-       'оправить криптовалюту определеному пользователю')
+        'оправить криптовалюту определеному пользователю')
+
+
 async def sell(update, context):
     await update.message.reply_text(
-       'продать криптовалюту онлайн пользователям')
+        'продать криптовалюту онлайн пользователям')
+
+
 async def buy(update, context):
     await update.message.reply_text(
-       'купить криптовалюту' )
+        'купить криптовалюту')
+
+
 async def donate(update, context):
     await update.message.reply_text(
-       'Поддержать создателя бота - 456789098765 карта' )
+        'Поддержать создателя бота - 456789098765 карта')
+
+
 async def bitcoin(update, context):
     await update.message.reply_text(
-       'bitcoin' )
+        'bitcoin')
 
-
+async def cancel(update, context):
+    await update.message.reply_text("Покупка криптовалюты отменено. Возвращайтесь, когда будете готовы!",
+                                    reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
 
 # Додавання обробника команди
 appLication.add_handler(CommandHandler("start", start_command))
@@ -201,47 +225,42 @@ appLication.add_handler(CommandHandler("donate", donate))
 appLication.add_handler(CommandHandler("bitcoin", bitcoin))
 appLication.add_handler(CallbackQueryHandler(button_handler))
 
-
-async def photo(update,context):
+async def photo(update, context):
     # Шляхи до локальних файлів
-      photo_paths = ['Image/bitcoin.jpg', 'Image/Buy.png' , 'Image/CryptoBot.jpg' , 'Image/Cryptocurrency.jpg' ,
-                  'Image/Donate.jpg' ,  'Image/info.png',  'Image/Pay.png', 'Image/Sell.jpg' ]
+    photo_paths = ['Image/bitcoin.jpg', 'Image/Buy.png', 'Image/CryptoBot.jpg', 'Image/Cryptocurrency.jpg',
+                   'Image/Donate.jpg', 'Image/info.png', 'Image/Pay.png', 'Image/Sell.jpg']
 
     # Перевірка на існування файлів
-      try:
-          media_group = [InputMediaPhoto(open(photo, 'rb')) for photo in photo_paths]
-          await update.message.reply_media_group(media_group)
-          await update.message.reply_text('Приклад')
-      except FileNotFoundError as e:
-          await update.message.reply_text(f'Помилка: файл {e.filename} не знайдено. ')
-      except Exception as e:
-          await update.message.reply_text(f'Виникла помилка: {str(e)}')
+    try:
+        media_group = [InputMediaPhoto(open(photo, 'rb')) for photo in photo_paths]
+        await update.message.reply_media_group(media_group)
+        await update.message.reply_text('Приклад')
+    except FileNotFoundError as e:
+        await update.message.reply_text(f'Помилка: файл {e.filename} не знайдено. ')
+    except Exception as e:
+        await update.message.reply_text(f'Виникла помилка: {str(e)}')
 
 
 appLication.add_handler(CommandHandler('photo', photo))
-
 
 # Ініціалізаців бази даних
 setup_database()
 
 # Добавление ConversationHandler для криптовалют
 booking_handler = ConversationHandler(
-    entry_points=[CallbackQueryHandler(button_handler, pattern="^book$")],
+    entry_points=[CallbackQueryHandler(button_handler, pattern="^(buy|help|donate|shop)$")],
     states={
         CRYPTOCURRENCY: [MessageHandler(filters.TEXT & ~filters.COMMAND, cryptocurrency)],
         PAYMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, payment)],
         FINISH: [MessageHandler(filters.TEXT & ~filters.COMMAND, finish)],
     },
-    fallbacks=[CommandHandler("cancel", cancel)],
+    fallbacks=[CommandHandler("cancel", cancel)], per_user=True
 )
-Application.add_handler(booking_handler)
+appLication.add_handler(booking_handler)
 
-
-#Запуск бота
+# Запуск бота
 if __name__ == '__main__':
-     appLication.run_polling()
-
-
+    appLication.run_polling()
 
 
 
